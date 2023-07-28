@@ -1,8 +1,9 @@
-const { posts } = require("../schemas/posts.schema")
+const { posts } = require("../schemas/posts.schema");
+const { categories } = require("../schemas/categories.schema");
 
 exports.getAllPosts = (req, res) => {
     posts.find({}).then(result => {
-        res.status(200).send(result)
+        res.status(200).send(result.reverse())
     })
 }
 
@@ -20,9 +21,16 @@ exports.getPostsByUser = (req, res) => {
     posts.find({
         author: username
     }).then(result => {
-        res.status(200).send(result);
+        res.status(200).send(result.reverse());
     }).catch(() => {
         res.sendStatus(400)
+    })
+}
+
+exports.getPostsByTag = (req, res) => {
+    const { tag } = req.params;
+    posts.find({ categories: tag }).then(result => {
+        res.send(result.reverse())
     })
 }
 
@@ -31,9 +39,24 @@ exports.createPost = (req, res) => {
     if (!title || !description || !author) {
         res.sendStatus(400);
     } else {
-        posts.create(req.body).then(result => {
-            res.status(201).send(result);
-        })
+        if (req.body.categories) {
+            categories.find({}).then(result => {
+                let all = [];
+                for (let i = 0; i < result.length; i++) all.push(result[i].title);
+                req.body.categories.forEach(category => {
+                    if (!all.includes(category)) {
+                        categories.create({ title: category });
+                    }
+                })
+            })
+            posts.create(req.body).then(result => {
+                res.status(201).send(result);
+            })
+        } else {
+            posts.create(req.body).then(result => {
+                res.status(201).send(result);
+            })
+        }
     }
 }
 
@@ -41,9 +64,24 @@ exports.updatePost = (req, res) => {
     const { id } = req.params;
     posts.findOne({ _id: id }).then(result => {
         if (result.author == req.body.author) {
-            posts.findByIdAndUpdate(id, req.body, { new: true }).then(data => {
-                res.status(200).send(data);
-            })
+            if (req.body.categories) {
+                categories.find({}).then(result => {
+                    let all = [];
+                    for (let i = 0; i < result.length; i++) all.push(result[i].title);
+                    req.body.categories.forEach(category => {
+                        if (!all.includes(category)) {
+                            categories.create({ title: category });
+                        }
+                    })
+                })
+                posts.findByIdAndUpdate(id, req.body, { new: true }).then(data => {
+                    res.status(200).send(data);
+                })
+            } else {
+                posts.findByIdAndUpdate(id, req.body, { new: true }).then(data => {
+                    res.status(200).send(data);
+                })
+            }
         } else {
             res.sendStatus(401)
         }

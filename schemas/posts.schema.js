@@ -16,6 +16,9 @@ const post = new Schema({
     },
     cover: {
         type: String,
+    },
+    categories: {
+        type: Array
     }
 }, {
     timestamps: {
