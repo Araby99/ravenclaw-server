@@ -94,6 +94,13 @@ exports.deletePost = (req, res) => {
     const author = data.split(":")[1];
     posts.findOne({ _id: id }).then(result => {
         if (result.author == author) {
+            result.categories.forEach(category => {
+                posts.find({ categories: category }).then(cat => {
+                    if (!cat[0]) {
+                        categories.deleteOne({ title: category }).then(() => console.log("deleted"));
+                    }
+                })
+            });
             posts.findByIdAndDelete(id).then(() => {
                 res.sendStatus(202)
             })
